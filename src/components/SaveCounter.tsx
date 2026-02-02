@@ -1,147 +1,162 @@
-import { useState, useEffect, useCallback } from 'react';
-
-interface CounterState {
-  home: number;
-  away: number;
-}
-
-interface HistoryEntry {
-  team: 'home' | 'away';
-  action: 'add';
-}
-
-const STORAGE_KEY = 'raddningsraknare';
+import { useState } from 'react';
+import { useMatch } from '@/hooks/useMatch';
+import { getSportConfig } from '@/lib/sportConfig';
+import { getTotals } from '@/lib/matchTypes';
+import SportSelector from './counter/SportSelector';
+import PeriodTabs from './counter/PeriodTabs';
+import TeamCounter from './counter/TeamCounter';
+import MatchActions from './counter/MatchActions';
+import ResetConfirmDialog from './counter/ResetConfirmDialog';
+import SavedMatchesSheet from './counter/SavedMatchesSheet';
+import { toast } from 'sonner';
 
 export default function SaveCounter() {
-  const [counts, setCounts] = useState<CounterState>({ home: 0, away: 0 });
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
-  const [animatingTeam, setAnimatingTeam] = useState<'home' | 'away' | null>(null);
+  const {
+    match,
+    savedMatches,
+    animatingTeam,
+    changeSport,
+    setCurrentPeriod,
+    addSave,
+    undo,
+    reset,
+    saveMatch,
+    loadMatch,
+    deleteMatch,
+    getShareUrl,
+  } = useMatch();
 
-  // Load from localStorage on mount
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
+  const [showResetDialog, setShowResetDialog] = useState(false);
+  const [showSavedMatches, setShowSavedMatches] = useState(false);
+
+  const sportConfig = getSportConfig(match.sport);
+  const currentPeriodCounts = match.periods[match.currentPeriod];
+  const totals = getTotals(match.periods);
+  const hasAnySaves = totals.home > 0 || totals.away > 0;
+
+  const handleShare = async () => {
+    const url = getShareUrl();
+    
+    if (navigator.share) {
       try {
-        const parsed = JSON.parse(saved);
-        setCounts(parsed.counts || { home: 0, away: 0 });
-        setHistory(parsed.history || []);
+        await navigator.share({
+          title: 'Räddningsräknare',
+          text: `${match.homeTeamName} ${totals.home} - ${totals.away} ${match.awayTeamName}`,
+          url,
+        });
       } catch {
-        // Invalid data, use defaults
+        // User cancelled or error
       }
+    } else {
+      await navigator.clipboard.writeText(url);
+      toast.success('Länk kopierad!');
     }
-  }, []);
+  };
 
-  // Save to localStorage on change
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ counts, history }));
-  }, [counts, history]);
+  const handleSave = () => {
+    saveMatch();
+    toast.success('Match sparad!');
+  };
 
-  const addSave = useCallback((team: 'home' | 'away') => {
-    setCounts(prev => ({ ...prev, [team]: prev[team] + 1 }));
-    setHistory(prev => [...prev, { team, action: 'add' }]);
-    setAnimatingTeam(team);
-    
-    // Haptic feedback if available
-    if (navigator.vibrate) {
-      navigator.vibrate(10);
-    }
-    
-    setTimeout(() => setAnimatingTeam(null), 200);
-  }, []);
+  const handleLoadMatch = (savedMatch: typeof savedMatches[0]) => {
+    loadMatch(savedMatch);
+    setShowSavedMatches(false);
+    toast.success('Match laddad!');
+  };
 
-  const undo = useCallback(() => {
-    if (history.length === 0) return;
-    
-    const lastEntry = history[history.length - 1];
-    setCounts(prev => ({
-      ...prev,
-      [lastEntry.team]: Math.max(0, prev[lastEntry.team] - 1)
-    }));
-    setHistory(prev => prev.slice(0, -1));
-    
-    if (navigator.vibrate) {
-      navigator.vibrate([10, 50, 10]);
-    }
-  }, [history]);
-
-  const reset = useCallback(() => {
-    setCounts({ home: 0, away: 0 });
-    setHistory([]);
-    
-    if (navigator.vibrate) {
-      navigator.vibrate([20, 30, 20]);
-    }
-  }, []);
+  const handleReset = () => {
+    reset();
+    setShowResetDialog(false);
+    toast.success('Match nollställd!');
+  };
 
   return (
-    <div className="flex flex-col min-h-screen min-h-[100dvh] p-4 gap-4">
+    <div className="flex flex-col min-h-screen min-h-[100dvh] p-4 gap-3">
       {/* Header */}
-      <header className="text-center py-2">
+      <header className="text-center py-1">
         <h1 className="text-lg font-semibold text-muted-foreground tracking-wide uppercase">
           Räddningar
         </h1>
       </header>
 
-      {/* Counters */}
-      <div className="flex-1 flex flex-col gap-4">
-        {/* Home Team */}
-        <button
-          onClick={() => addSave('home')}
-          className="flex-1 rounded-2xl bg-card flex flex-col items-center justify-center gap-2 tap-scale btn-glow-home border-2 border-home/30 active:border-home/60 transition-all"
-          aria-label="Lägg till räddning för hemmalaget"
-        >
-          <span className="text-sm font-medium text-muted-foreground uppercase tracking-widest">
-            Hemmalag
-          </span>
-          <span 
-            className={`text-8xl sm:text-9xl font-bold text-home counter-number ${
-              animatingTeam === 'home' ? 'animate-count' : ''
-            }`}
-          >
-            {counts.home}
-          </span>
-          <span className="text-4xl text-home/60">➕</span>
-        </button>
+      {/* Sport Selector */}
+      <SportSelector
+        selectedSport={match.sport}
+        onSelectSport={changeSport}
+        disabled={hasAnySaves}
+      />
 
-        {/* Away Team */}
-        <button
+      {/* Period Tabs */}
+      <PeriodTabs
+        sportConfig={sportConfig}
+        currentPeriod={match.currentPeriod}
+        periods={match.periods}
+        onSelectPeriod={setCurrentPeriod}
+      />
+
+      {/* Counters */}
+      <div className="flex-1 flex flex-col gap-3 min-h-0">
+        <TeamCounter
+          team="home"
+          label={match.homeTeamName}
+          count={currentPeriodCounts.home}
+          totalCount={totals.home}
+          isAnimating={animatingTeam === 'home'}
+          onClick={() => addSave('home')}
+        />
+
+        <TeamCounter
+          team="away"
+          label={match.awayTeamName}
+          count={currentPeriodCounts.away}
+          totalCount={totals.away}
+          isAnimating={animatingTeam === 'away'}
           onClick={() => addSave('away')}
-          className="flex-1 rounded-2xl bg-card flex flex-col items-center justify-center gap-2 tap-scale btn-glow-away border-2 border-away/30 active:border-away/60 transition-all"
-          aria-label="Lägg till räddning för bortalaget"
-        >
-          <span className="text-sm font-medium text-muted-foreground uppercase tracking-widest">
-            Bortalag
-          </span>
-          <span 
-            className={`text-8xl sm:text-9xl font-bold text-away counter-number ${
-              animatingTeam === 'away' ? 'animate-count' : ''
-            }`}
-          >
-            {counts.away}
-          </span>
-          <span className="text-4xl text-away/60">➕</span>
-        </button>
+        />
       </div>
+
+      {/* Match Actions */}
+      <MatchActions
+        onShare={handleShare}
+        onSave={handleSave}
+        onShowHistory={() => setShowSavedMatches(true)}
+        hasSavedMatches={savedMatches.length > 0}
+      />
 
       {/* Controls */}
       <div className="flex gap-3 pb-safe">
         <button
           onClick={undo}
-          disabled={history.length === 0}
+          disabled={match.history.length === 0}
           className="flex-1 py-4 rounded-xl bg-secondary text-undo font-semibold text-lg tap-scale disabled:opacity-30 disabled:cursor-not-allowed transition-opacity"
           aria-label="Ångra senaste"
         >
           ↩ Ångra
         </button>
         <button
-          onClick={reset}
-          disabled={counts.home === 0 && counts.away === 0}
+          onClick={() => setShowResetDialog(true)}
+          disabled={!hasAnySaves}
           className="flex-1 py-4 rounded-xl bg-secondary text-reset font-semibold text-lg tap-scale disabled:opacity-30 disabled:cursor-not-allowed transition-opacity"
           aria-label="Nollställ match"
         >
           ⟳ Nollställ
         </button>
       </div>
+
+      {/* Dialogs */}
+      <ResetConfirmDialog
+        open={showResetDialog}
+        onOpenChange={setShowResetDialog}
+        onConfirm={handleReset}
+      />
+
+      <SavedMatchesSheet
+        open={showSavedMatches}
+        onOpenChange={setShowSavedMatches}
+        savedMatches={savedMatches}
+        onLoadMatch={handleLoadMatch}
+        onDeleteMatch={deleteMatch}
+      />
     </div>
   );
 }
