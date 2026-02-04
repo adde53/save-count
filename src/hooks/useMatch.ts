@@ -13,6 +13,8 @@ export function useMatch() {
   const [savedMatches, setSavedMatches] = useState<SavedMatch[]>([]);
   const [animatingTeam, setAnimatingTeam] = useState<'home' | 'away' | null>(null);
   const [loadingMatches, setLoadingMatches] = useState(false);
+  const [homeGoalieId, setHomeGoalieId] = useState<string | null>(null);
+  const [awayGoalieId, setAwayGoalieId] = useState<string | null>(null);
 
   // Load current match from localStorage on mount
   useEffect(() => {
@@ -84,6 +86,8 @@ export function useMatch() {
   const changeSport = useCallback((sport: SportType) => {
     const config = getSportConfig(sport);
     setMatch(createEmptyMatch(sport, config.periodCount));
+    setHomeGoalieId(null);
+    setAwayGoalieId(null);
   }, []);
 
   const setCurrentPeriod = useCallback((period: number) => {
@@ -144,6 +148,8 @@ export function useMatch() {
   const reset = useCallback(() => {
     const config = getSportConfig(match.sport);
     setMatch(createEmptyMatch(match.sport, config.periodCount));
+    setHomeGoalieId(null);
+    setAwayGoalieId(null);
 
     if (navigator.vibrate) {
       navigator.vibrate([20, 30, 20]);
@@ -161,6 +167,8 @@ export function useMatch() {
           sport: match.sport,
           home_team_name: match.homeTeamName,
           away_team_name: match.awayTeamName,
+          home_goalie_id: homeGoalieId,
+          away_goalie_id: awayGoalieId,
           periods: match.periods as unknown as Json,
           total_home_saves: totals.home,
           total_away_saves: totals.away,
@@ -190,7 +198,7 @@ export function useMatch() {
     if (navigator.vibrate) {
       navigator.vibrate(20);
     }
-  }, [match, user, savedMatches]);
+  }, [match, user, savedMatches, homeGoalieId, awayGoalieId]);
 
   const loadMatch = useCallback((savedMatch: SavedMatch) => {
     const { id, savedAt, ...matchState } = savedMatch;
@@ -261,6 +269,10 @@ export function useMatch() {
     animatingTeam,
     loadingMatches,
     isLoggedIn: !!user,
+    homeGoalieId,
+    awayGoalieId,
+    setHomeGoalieId,
+    setAwayGoalieId,
     changeSport,
     setCurrentPeriod,
     addSave,
