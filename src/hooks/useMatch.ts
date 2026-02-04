@@ -1,16 +1,20 @@
 import { useState, useEffect, useCallback } from 'react';
-import { MatchState, SavedMatch, createEmptyMatch, HistoryEntry } from '@/lib/matchTypes';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { MatchState, SavedMatch, createEmptyMatch, HistoryEntry, PeriodCounts, getTotals } from '@/lib/matchTypes';
 import { SportType, getSportConfig } from '@/lib/sportConfig';
+import { Json } from '@/integrations/supabase/types';
 
 const STORAGE_KEY = 'raddningsraknare_v2';
-const SAVED_MATCHES_KEY = 'raddningsraknare_saved';
 
 export function useMatch() {
+  const { user } = useAuth();
   const [match, setMatch] = useState<MatchState>(() => createEmptyMatch('innebandy', 3));
   const [savedMatches, setSavedMatches] = useState<SavedMatch[]>([]);
   const [animatingTeam, setAnimatingTeam] = useState<'home' | 'away' | null>(null);
+  const [loadingMatches, setLoadingMatches] = useState(false);
 
-  // Load from localStorage on mount
+  // Load current match from localStorage on mount
   useEffect(() => {
     const savedCurrent = localStorage.getItem(STORAGE_KEY);
     if (savedCurrent) {
@@ -21,26 +25,61 @@ export function useMatch() {
         // Invalid data, use defaults
       }
     }
+  }, []);
 
-    const savedList = localStorage.getItem(SAVED_MATCHES_KEY);
-    if (savedList) {
-      try {
-        setSavedMatches(JSON.parse(savedList));
-      } catch {
-        // Invalid data
+  // Load saved matches from database when user logs in
+  useEffect(() => {
+    if (user) {
+      loadSavedMatches();
+    } else {
+      // Load from localStorage if not logged in
+      const localMatches = localStorage.getItem('raddningsraknare_saved');
+      if (localMatches) {
+        try {
+          setSavedMatches(JSON.parse(localMatches));
+        } catch {
+          // Invalid data
+        }
       }
     }
-  }, []);
+  }, [user]);
+
+  const loadSavedMatches = async () => {
+    if (!user) return;
+    
+    setLoadingMatches(true);
+    try {
+      const { data, error } = await supabase
+        .from('saved_matches')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const matches: SavedMatch[] = (data || []).map((m) => ({
+        id: m.id,
+        sport: m.sport as SportType,
+        currentPeriod: 0,
+        periods: m.periods as unknown as PeriodCounts[],
+        history: [],
+        homeTeamName: m.home_team_name,
+        awayTeamName: m.away_team_name,
+        createdAt: m.match_date,
+        savedAt: m.created_at,
+      }));
+
+      setSavedMatches(matches);
+    } catch (error) {
+      console.error('Failed to load matches:', error);
+    } finally {
+      setLoadingMatches(false);
+    }
+  };
 
   // Save current match to localStorage on change
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(match));
   }, [match]);
-
-  // Save matches list to localStorage
-  useEffect(() => {
-    localStorage.setItem(SAVED_MATCHES_KEY, JSON.stringify(savedMatches));
-  }, [savedMatches]);
 
   const changeSport = useCallback((sport: SportType) => {
     const config = getSportConfig(sport);
@@ -111,28 +150,73 @@ export function useMatch() {
     }
   }, [match.sport]);
 
-  const saveMatch = useCallback(() => {
-    const newSavedMatch: SavedMatch = {
-      ...match,
-      id: Date.now().toString(),
-      savedAt: new Date().toISOString(),
-    };
+  const saveMatch = useCallback(async () => {
+    const totals = getTotals(match.periods);
+    
+    if (user) {
+      // Save to database
+      try {
+        const { error } = await supabase.from('saved_matches').insert({
+          user_id: user.id,
+          sport: match.sport,
+          home_team_name: match.homeTeamName,
+          away_team_name: match.awayTeamName,
+          periods: match.periods as unknown as Json,
+          total_home_saves: totals.home,
+          total_away_saves: totals.away,
+          match_date: match.createdAt,
+        });
 
-    setSavedMatches(prev => [newSavedMatch, ...prev]);
+        if (error) throw error;
+        
+        await loadSavedMatches();
+      } catch (error) {
+        console.error('Failed to save match:', error);
+        throw error;
+      }
+    } else {
+      // Save to localStorage
+      const newSavedMatch: SavedMatch = {
+        ...match,
+        id: Date.now().toString(),
+        savedAt: new Date().toISOString(),
+      };
+      
+      const updated = [newSavedMatch, ...savedMatches];
+      setSavedMatches(updated);
+      localStorage.setItem('raddningsraknare_saved', JSON.stringify(updated));
+    }
 
     if (navigator.vibrate) {
       navigator.vibrate(20);
     }
-  }, [match]);
+  }, [match, user, savedMatches]);
 
   const loadMatch = useCallback((savedMatch: SavedMatch) => {
     const { id, savedAt, ...matchState } = savedMatch;
     setMatch(matchState);
   }, []);
 
-  const deleteMatch = useCallback((id: string) => {
-    setSavedMatches(prev => prev.filter(m => m.id !== id));
-  }, []);
+  const deleteMatch = useCallback(async (id: string) => {
+    if (user) {
+      try {
+        const { error } = await supabase
+          .from('saved_matches')
+          .delete()
+          .eq('id', id);
+
+        if (error) throw error;
+        
+        setSavedMatches(prev => prev.filter(m => m.id !== id));
+      } catch (error) {
+        console.error('Failed to delete match:', error);
+      }
+    } else {
+      const updated = savedMatches.filter(m => m.id !== id);
+      setSavedMatches(updated);
+      localStorage.setItem('raddningsraknare_saved', JSON.stringify(updated));
+    }
+  }, [user, savedMatches]);
 
   const getShareUrl = useCallback(() => {
     const params = new URLSearchParams();
@@ -153,7 +237,6 @@ export function useMatch() {
     if (sport && data) {
       try {
         const periods = JSON.parse(atob(data));
-        const config = getSportConfig(sport);
         setMatch({
           sport,
           currentPeriod: 0,
@@ -176,6 +259,8 @@ export function useMatch() {
     match,
     savedMatches,
     animatingTeam,
+    loadingMatches,
+    isLoggedIn: !!user,
     changeSport,
     setCurrentPeriod,
     addSave,

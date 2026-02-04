@@ -14,7 +14,140 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      goalies: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          team_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          team_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          team_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goalies_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      saved_matches: {
+        Row: {
+          away_goalie_id: string | null
+          away_team_name: string
+          created_at: string
+          home_goalie_id: string | null
+          home_team_name: string
+          id: string
+          match_date: string
+          periods: Json
+          sport: string
+          total_away_saves: number
+          total_home_saves: number
+          user_id: string
+        }
+        Insert: {
+          away_goalie_id?: string | null
+          away_team_name?: string
+          created_at?: string
+          home_goalie_id?: string | null
+          home_team_name?: string
+          id?: string
+          match_date?: string
+          periods?: Json
+          sport?: string
+          total_away_saves?: number
+          total_home_saves?: number
+          user_id: string
+        }
+        Update: {
+          away_goalie_id?: string | null
+          away_team_name?: string
+          created_at?: string
+          home_goalie_id?: string | null
+          home_team_name?: string
+          id?: string
+          match_date?: string
+          periods?: Json
+          sport?: string
+          total_away_saves?: number
+          total_home_saves?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_matches_away_goalie_id_fkey"
+            columns: ["away_goalie_id"]
+            isOneToOne: false
+            referencedRelation: "goalies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_matches_home_goalie_id_fkey"
+            columns: ["home_goalie_id"]
+            isOneToOne: false
+            referencedRelation: "goalies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teams: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
