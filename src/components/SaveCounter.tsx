@@ -8,6 +8,8 @@ import TeamCounter from './counter/TeamCounter';
 import MatchActions from './counter/MatchActions';
 import ResetConfirmDialog from './counter/ResetConfirmDialog';
 import SavedMatchesSheet from './counter/SavedMatchesSheet';
+import UserMenu from './auth/UserMenu';
+import AuthSheet from './auth/AuthSheet';
 import { toast } from 'sonner';
 
 export default function SaveCounter() {
@@ -15,6 +17,7 @@ export default function SaveCounter() {
     match,
     savedMatches,
     animatingTeam,
+    isLoggedIn,
     changeSport,
     setCurrentPeriod,
     addSave,
@@ -28,6 +31,7 @@ export default function SaveCounter() {
 
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [showSavedMatches, setShowSavedMatches] = useState(false);
+  const [showAuthSheet, setShowAuthSheet] = useState(false);
 
   const sportConfig = getSportConfig(match.sport);
   const currentPeriodCounts = match.periods[match.currentPeriod];
@@ -53,9 +57,13 @@ export default function SaveCounter() {
     }
   };
 
-  const handleSave = () => {
-    saveMatch();
-    toast.success('Match sparad!');
+  const handleSave = async () => {
+    try {
+      await saveMatch();
+      toast.success(isLoggedIn ? 'Match sparad till ditt konto!' : 'Match sparad lokalt!');
+    } catch {
+      toast.error('Kunde inte spara matchen');
+    }
   };
 
   const handleLoadMatch = (savedMatch: typeof savedMatches[0]) => {
@@ -73,10 +81,11 @@ export default function SaveCounter() {
   return (
     <div className="flex flex-col min-h-screen min-h-[100dvh] p-4 gap-3">
       {/* Header */}
-      <header className="text-center py-1">
+      <header className="flex items-center justify-between py-1">
         <h1 className="text-lg font-semibold text-muted-foreground tracking-wide uppercase">
           Räddningar
         </h1>
+        <UserMenu onLoginClick={() => setShowAuthSheet(true)} />
       </header>
 
       {/* Sport Selector */}
@@ -156,6 +165,11 @@ export default function SaveCounter() {
         savedMatches={savedMatches}
         onLoadMatch={handleLoadMatch}
         onDeleteMatch={deleteMatch}
+      />
+
+      <AuthSheet
+        open={showAuthSheet}
+        onOpenChange={setShowAuthSheet}
       />
     </div>
   );
