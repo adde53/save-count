@@ -8,6 +8,8 @@ import TeamCounter from './counter/TeamCounter';
 import MatchActions from './counter/MatchActions';
 import ResetConfirmDialog from './counter/ResetConfirmDialog';
 import SavedMatchesSheet from './counter/SavedMatchesSheet';
+import TeamsGoaliesSheet from './manage/TeamsGoaliesSheet';
+import StatsSheet from './stats/StatsSheet';
 import UserMenu from './auth/UserMenu';
 import AuthSheet from './auth/AuthSheet';
 import { toast } from 'sonner';
@@ -27,11 +29,17 @@ export default function SaveCounter() {
     loadMatch,
     deleteMatch,
     getShareUrl,
+    homeGoalieId,
+    awayGoalieId,
+    setHomeGoalieId,
+    setAwayGoalieId,
   } = useMatch();
 
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [showSavedMatches, setShowSavedMatches] = useState(false);
   const [showAuthSheet, setShowAuthSheet] = useState(false);
+  const [showTeamsSheet, setShowTeamsSheet] = useState(false);
+  const [showStatsSheet, setShowStatsSheet] = useState(false);
 
   const sportConfig = getSportConfig(match.sport);
   const currentPeriodCounts = match.periods[match.currentPeriod];
@@ -112,6 +120,9 @@ export default function SaveCounter() {
           totalCount={totals.home}
           isAnimating={animatingTeam === 'home'}
           onClick={() => addSave('home')}
+          selectedGoalieId={homeGoalieId}
+          onGoalieChange={setHomeGoalieId}
+          showGoalieSelector={isLoggedIn}
         />
 
         <TeamCounter
@@ -121,6 +132,9 @@ export default function SaveCounter() {
           totalCount={totals.away}
           isAnimating={animatingTeam === 'away'}
           onClick={() => addSave('away')}
+          selectedGoalieId={awayGoalieId}
+          onGoalieChange={setAwayGoalieId}
+          showGoalieSelector={isLoggedIn}
         />
       </div>
 
@@ -129,7 +143,10 @@ export default function SaveCounter() {
         onShare={handleShare}
         onSave={handleSave}
         onShowHistory={() => setShowSavedMatches(true)}
+        onShowTeams={() => setShowTeamsSheet(true)}
+        onShowStats={() => setShowStatsSheet(true)}
         hasSavedMatches={savedMatches.length > 0}
+        isLoggedIn={isLoggedIn}
       />
 
       {/* Controls */}
@@ -170,6 +187,16 @@ export default function SaveCounter() {
       <AuthSheet
         open={showAuthSheet}
         onOpenChange={setShowAuthSheet}
+      />
+
+      <TeamsGoaliesSheet
+        open={showTeamsSheet}
+        onOpenChange={setShowTeamsSheet}
+      />
+
+      <StatsSheet
+        open={showStatsSheet}
+        onOpenChange={setShowStatsSheet}
       />
     </div>
   );
