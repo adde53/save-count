@@ -1,3 +1,4 @@
+import { useState, useRef } from 'react';
 import GoalieSelector from './GoalieSelector';
 
 interface TeamCounterProps {
@@ -7,6 +8,7 @@ interface TeamCounterProps {
   totalCount: number;
   isAnimating: boolean;
   onClick: () => void;
+  onLabelChange?: (name: string) => void;
   selectedGoalieId?: string | null;
   onGoalieChange?: (goalieId: string | null) => void;
   showGoalieSelector?: boolean;
@@ -19,14 +21,59 @@ export default function TeamCounter({
   totalCount,
   isAnimating,
   onClick,
+  onLabelChange,
   selectedGoalieId,
   onGoalieChange,
   showGoalieSelector = false,
 }: TeamCounterProps) {
   const isHome = team === 'home';
-  
+  const [editing, setEditing] = useState(false);
+  const [editValue, setEditValue] = useState(label);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const startEditing = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditValue(label);
+    setEditing(true);
+    setTimeout(() => inputRef.current?.select(), 0);
+  };
+
+  const commitEdit = () => {
+    const trimmed = editValue.trim();
+    if (trimmed && onLabelChange) {
+      onLabelChange(trimmed);
+    }
+    setEditing(false);
+  };
+
   return (
     <div className="flex-1 flex flex-col gap-1">
+      {/* Editable team name */}
+      <div className="flex items-center justify-center gap-2 px-2">
+        {editing ? (
+          <input
+            ref={inputRef}
+            autoFocus
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onBlur={commitEdit}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') commitEdit();
+              if (e.key === 'Escape') setEditing(false);
+            }}
+            className="text-center text-sm font-semibold bg-transparent border-b-2 border-primary/50 outline-none w-full max-w-[160px] py-0.5"
+          />
+        ) : (
+          <button
+            onClick={startEditing}
+            className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors truncate max-w-[160px]"
+            title="Klicka för att ändra lagnamn"
+          >
+            ✏️ {label}
+          </button>
+        )}
+      </div>
+
       {showGoalieSelector && onGoalieChange && (
         <GoalieSelector
           label="Välj målvakt"
@@ -43,9 +90,6 @@ export default function TeamCounter({
         }`}
         aria-label={`Lägg till räddning för ${label}`}
       >
-        <span className="text-sm font-medium text-muted-foreground uppercase tracking-widest">
-          {label}
-        </span>
         <span
           className={`text-7xl sm:text-8xl font-bold counter-number ${
             isHome ? 'text-home' : 'text-away'

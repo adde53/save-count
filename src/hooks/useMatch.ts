@@ -94,6 +94,13 @@ export function useMatch() {
     setMatch(prev => ({ ...prev, currentPeriod: period }));
   }, []);
 
+  const setTeamName = useCallback((team: 'home' | 'away', name: string) => {
+    setMatch(prev => ({
+      ...prev,
+      [team === 'home' ? 'homeTeamName' : 'awayTeamName']: name,
+    }));
+  }, []);
+
   const addSave = useCallback((team: 'home' | 'away') => {
     setMatch(prev => {
       const newPeriods = [...prev.periods];
@@ -274,6 +281,7 @@ export function useMatch() {
     setHomeGoalieId,
     setAwayGoalieId,
     changeSport,
+    setTeamName,
     setCurrentPeriod,
     addSave,
     undo,

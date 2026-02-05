@@ -21,6 +21,7 @@ export default function SaveCounter() {
     animatingTeam,
     isLoggedIn,
     changeSport,
+    setTeamName,
     setCurrentPeriod,
     addSave,
     undo,
@@ -120,6 +121,7 @@ export default function SaveCounter() {
           totalCount={totals.home}
           isAnimating={animatingTeam === 'home'}
           onClick={() => addSave('home')}
+          onLabelChange={(name) => setTeamName('home', name)}
           selectedGoalieId={homeGoalieId}
           onGoalieChange={setHomeGoalieId}
           showGoalieSelector={isLoggedIn}
@@ -132,6 +134,7 @@ export default function SaveCounter() {
           totalCount={totals.away}
           isAnimating={animatingTeam === 'away'}
           onClick={() => addSave('away')}
+          onLabelChange={(name) => setTeamName('away', name)}
           selectedGoalieId={awayGoalieId}
           onGoalieChange={setAwayGoalieId}
           showGoalieSelector={isLoggedIn}
