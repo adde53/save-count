@@ -1,5 +1,7 @@
 import { useState, useRef } from 'react';
 import GoalieSelector from './GoalieSelector';
+import ShotButtons from './ShotButtons';
+import { ShotOutcome } from '@/lib/shotTypes';
 
 interface TeamCounterProps {
   team: 'home' | 'away';
@@ -12,6 +14,7 @@ interface TeamCounterProps {
   selectedGoalieId?: string | null;
   onGoalieChange?: (goalieId: string | null) => void;
   showGoalieSelector?: boolean;
+  onShot?: (team: 'home' | 'away', outcome: ShotOutcome) => void;
 }
 
 export default function TeamCounter({
@@ -25,6 +28,7 @@ export default function TeamCounter({
   selectedGoalieId,
   onGoalieChange,
   showGoalieSelector = false,
+  onShot,
 }: TeamCounterProps) {
   const isHome = team === 'home';
   const [editing, setEditing] = useState(false);
@@ -104,6 +108,9 @@ export default function TeamCounter({
         )}
         <span className={`text-3xl ${isHome ? 'text-home/60' : 'text-away/60'}`}>➕</span>
       </button>
+      {onShot && (
+        <ShotButtons team={team} onShot={onShot} />
+      )}
     </div>
   );
 }

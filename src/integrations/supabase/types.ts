@@ -127,6 +127,50 @@ export type Database = {
           },
         ]
       }
+      shot_events: {
+        Row: {
+          created_at: string
+          id: string
+          match_id: string | null
+          outcome: string
+          period: number
+          position_x: number | null
+          position_y: number | null
+          team: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          match_id?: string | null
+          outcome: string
+          period?: number
+          position_x?: number | null
+          position_y?: number | null
+          team: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          match_id?: string | null
+          outcome?: string
+          period?: number
+          position_x?: number | null
+          position_y?: number | null
+          team?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shot_events_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "saved_matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teams: {
         Row: {
           created_at: string

@@ -1,4 +1,4 @@
-import { Share2, Save, History, Users, BarChart3 } from 'lucide-react';
+import { Share2, Save, History, Users, BarChart3, Target } from 'lucide-react';
 
 interface MatchActionsProps {
   onShare: () => void;
@@ -6,6 +6,7 @@ interface MatchActionsProps {
   onShowHistory: () => void;
   onShowTeams: () => void;
   onShowStats: () => void;
+  onGoalTracker: () => void;
   hasSavedMatches: boolean;
   isLoggedIn: boolean;
 }
@@ -16,6 +17,7 @@ export default function MatchActions({
   onShowHistory,
   onShowTeams,
   onShowStats,
+  onGoalTracker,
   hasSavedMatches,
   isLoggedIn,
 }: MatchActionsProps) {
@@ -36,6 +38,13 @@ export default function MatchActions({
       >
         <Save className="w-4 h-4" />
         Spara
+      </button>
+      <button
+        onClick={onGoalTracker}
+        className="flex items-center justify-center px-3 py-2.5 rounded-xl bg-secondary text-foreground font-medium tap-scale"
+        aria-label="Öppna skottkarta"
+      >
+        <Target className="w-4 h-4" />
       </button>
       {hasSavedMatches && (
         <button

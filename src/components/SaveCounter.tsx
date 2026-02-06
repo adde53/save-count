@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useMatch } from '@/hooks/useMatch';
 import { getSportConfig } from '@/lib/sportConfig';
 import { getTotals } from '@/lib/matchTypes';
+import { ShotOutcome } from '@/lib/shotTypes';
 import SportSelector from './counter/SportSelector';
 import PeriodTabs from './counter/PeriodTabs';
 import TeamCounter from './counter/TeamCounter';
@@ -15,6 +17,7 @@ import AuthSheet from './auth/AuthSheet';
 import { toast } from 'sonner';
 
 export default function SaveCounter() {
+  const navigate = useNavigate();
   const {
     match,
     savedMatches,
@@ -87,6 +90,14 @@ export default function SaveCounter() {
     toast.success('Match nollställd!');
   };
 
+  const handleShot = (team: 'home' | 'away', outcome: ShotOutcome) => {
+    // For 'save' outcome, also increment the counter
+    if (outcome === 'save') {
+      addSave(team);
+    }
+    // TODO: Track shot events when full integration is needed
+  };
+
   return (
     <div className="flex flex-col min-h-screen min-h-[100dvh] p-4 gap-3">
       {/* Header */}
@@ -125,6 +136,7 @@ export default function SaveCounter() {
           selectedGoalieId={homeGoalieId}
           onGoalieChange={setHomeGoalieId}
           showGoalieSelector={isLoggedIn}
+          onShot={handleShot}
         />
 
         <TeamCounter
@@ -138,6 +150,7 @@ export default function SaveCounter() {
           selectedGoalieId={awayGoalieId}
           onGoalieChange={setAwayGoalieId}
           showGoalieSelector={isLoggedIn}
+          onShot={handleShot}
         />
       </div>
 
@@ -148,6 +161,7 @@ export default function SaveCounter() {
         onShowHistory={() => setShowSavedMatches(true)}
         onShowTeams={() => setShowTeamsSheet(true)}
         onShowStats={() => setShowStatsSheet(true)}
+        onGoalTracker={() => navigate(`/goal-tracker?sport=${match.sport}&home=${encodeURIComponent(match.homeTeamName)}&away=${encodeURIComponent(match.awayTeamName)}`)}
         hasSavedMatches={savedMatches.length > 0}
         isLoggedIn={isLoggedIn}
       />
