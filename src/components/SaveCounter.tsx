@@ -15,28 +15,15 @@ import StatsSheet from './stats/StatsSheet';
 import UserMenu from './auth/UserMenu';
 import AuthSheet from './auth/AuthSheet';
 import { toast } from 'sonner';
+import { Target, Shield } from 'lucide-react';
 
 export default function SaveCounter() {
   const navigate = useNavigate();
   const {
-    match,
-    savedMatches,
-    animatingTeam,
-    isLoggedIn,
-    changeSport,
-    setTeamName,
-    setCurrentPeriod,
-    addSave,
-    undo,
-    reset,
-    saveMatch,
-    loadMatch,
-    deleteMatch,
-    getShareUrl,
-    homeGoalieId,
-    awayGoalieId,
-    setHomeGoalieId,
-    setAwayGoalieId,
+    match, savedMatches, animatingTeam, isLoggedIn,
+    changeSport, setTeamName, setCurrentPeriod,
+    addSave, undo, reset, saveMatch, loadMatch, deleteMatch, getShareUrl,
+    homeGoalieId, awayGoalieId, setHomeGoalieId, setAwayGoalieId,
   } = useMatch();
 
   const [showResetDialog, setShowResetDialog] = useState(false);
@@ -52,7 +39,6 @@ export default function SaveCounter() {
 
   const handleShare = async () => {
     const url = getShareUrl();
-    
     if (navigator.share) {
       try {
         await navigator.share({
@@ -60,9 +46,7 @@ export default function SaveCounter() {
           text: `${match.homeTeamName} ${totals.home} - ${totals.away} ${match.awayTeamName}`,
           url,
         });
-      } catch {
-        // User cancelled or error
-      }
+      } catch { /* cancelled */ }
     } else {
       await navigator.clipboard.writeText(url);
       toast.success('Länk kopierad!');
@@ -91,21 +75,33 @@ export default function SaveCounter() {
   };
 
   const handleShot = (team: 'home' | 'away', outcome: ShotOutcome) => {
-    // For 'save' outcome, also increment the counter
     if (outcome === 'save') {
       addSave(team);
     }
-    // TODO: Track shot events when full integration is needed
+  };
+
+  const goToGoalTracker = () => {
+    navigate(`/goal-tracker?sport=${match.sport}&home=${encodeURIComponent(match.homeTeamName)}&away=${encodeURIComponent(match.awayTeamName)}`);
   };
 
   return (
     <div className="flex flex-col min-h-screen min-h-[100dvh] p-4 gap-3">
-      {/* Header */}
+      {/* Header with page toggle */}
       <header className="flex items-center justify-between py-1">
         <h1 className="text-lg font-semibold text-muted-foreground tracking-wide uppercase">
           Räddningar
         </h1>
-        <UserMenu onLoginClick={() => setShowAuthSheet(true)} />
+        <div className="flex items-center gap-2">
+          <button
+            onClick={goToGoalTracker}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600/20 text-emerald-400 font-semibold text-sm tap-scale border border-emerald-500/30 hover:bg-emerald-600/30 transition-all"
+            aria-label="Öppna skottkarta"
+          >
+            <Target className="w-4 h-4" />
+            Skottkarta
+          </button>
+          <UserMenu onLoginClick={() => setShowAuthSheet(true)} />
+        </div>
       </header>
 
       {/* Sport Selector */}
@@ -138,7 +134,6 @@ export default function SaveCounter() {
           showGoalieSelector={isLoggedIn}
           onShot={handleShot}
         />
-
         <TeamCounter
           team="away"
           label={match.awayTeamName}
@@ -161,7 +156,7 @@ export default function SaveCounter() {
         onShowHistory={() => setShowSavedMatches(true)}
         onShowTeams={() => setShowTeamsSheet(true)}
         onShowStats={() => setShowStatsSheet(true)}
-        onGoalTracker={() => navigate(`/goal-tracker?sport=${match.sport}&home=${encodeURIComponent(match.homeTeamName)}&away=${encodeURIComponent(match.awayTeamName)}`)}
+        onGoalTracker={goToGoalTracker}
         hasSavedMatches={savedMatches.length > 0}
         isLoggedIn={isLoggedIn}
       />
@@ -187,34 +182,11 @@ export default function SaveCounter() {
       </div>
 
       {/* Dialogs */}
-      <ResetConfirmDialog
-        open={showResetDialog}
-        onOpenChange={setShowResetDialog}
-        onConfirm={handleReset}
-      />
-
-      <SavedMatchesSheet
-        open={showSavedMatches}
-        onOpenChange={setShowSavedMatches}
-        savedMatches={savedMatches}
-        onLoadMatch={handleLoadMatch}
-        onDeleteMatch={deleteMatch}
-      />
-
-      <AuthSheet
-        open={showAuthSheet}
-        onOpenChange={setShowAuthSheet}
-      />
-
-      <TeamsGoaliesSheet
-        open={showTeamsSheet}
-        onOpenChange={setShowTeamsSheet}
-      />
-
-      <StatsSheet
-        open={showStatsSheet}
-        onOpenChange={setShowStatsSheet}
-      />
+      <ResetConfirmDialog open={showResetDialog} onOpenChange={setShowResetDialog} onConfirm={handleReset} />
+      <SavedMatchesSheet open={showSavedMatches} onOpenChange={setShowSavedMatches} savedMatches={savedMatches} onLoadMatch={handleLoadMatch} onDeleteMatch={deleteMatch} />
+      <AuthSheet open={showAuthSheet} onOpenChange={setShowAuthSheet} />
+      <TeamsGoaliesSheet open={showTeamsSheet} onOpenChange={setShowTeamsSheet} />
+      <StatsSheet open={showStatsSheet} onOpenChange={setShowStatsSheet} />
     </div>
   );
 }
