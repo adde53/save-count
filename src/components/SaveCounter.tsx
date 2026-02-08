@@ -86,23 +86,28 @@ export default function SaveCounter() {
 
   return (
     <div className="flex flex-col min-h-screen min-h-[100dvh] p-4 gap-3">
-      {/* Header with page toggle */}
-      <header className="flex items-center justify-between py-1">
-        <h1 className="text-lg font-semibold text-muted-foreground tracking-wide uppercase">
-          Räddningar
-        </h1>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={goToGoalTracker}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600/20 text-emerald-400 font-semibold text-sm tap-scale border border-emerald-500/30 hover:bg-emerald-600/30 transition-all"
-            aria-label="Öppna skottkarta"
-          >
-            <Target className="w-4 h-4" />
-            Skottkarta
-          </button>
-          <UserMenu onLoginClick={() => setShowAuthSheet(true)} />
-        </div>
+      {/* Top bar: user menu */}
+      <header className="flex items-center justify-end py-0.5">
+        <UserMenu onLoginClick={() => setShowAuthSheet(true)} />
       </header>
+
+      {/* Page toggle - Räknare / Skottkarta */}
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-primary text-primary-foreground font-bold text-sm tap-scale"
+          disabled
+        >
+          <Shield className="w-4 h-4" />
+          Räknare
+        </button>
+        <button
+          onClick={goToGoalTracker}
+          className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-secondary text-muted-foreground font-bold text-sm tap-scale hover:bg-secondary/80 transition-colors border border-border"
+        >
+          <Target className="w-4 h-4" />
+          Skottkarta
+        </button>
+      </div>
 
       {/* Sport Selector */}
       <SportSelector
@@ -166,16 +171,14 @@ export default function SaveCounter() {
         <button
           onClick={undo}
           disabled={match.history.length === 0}
-          className="flex-1 py-4 rounded-xl bg-secondary text-undo font-semibold text-lg tap-scale disabled:opacity-30 disabled:cursor-not-allowed transition-opacity"
-          aria-label="Ångra senaste"
+          className="flex-1 py-3.5 rounded-xl bg-secondary text-undo font-semibold text-base tap-scale disabled:opacity-30 disabled:cursor-not-allowed transition-opacity"
         >
           ↩ Ångra
         </button>
         <button
           onClick={() => setShowResetDialog(true)}
           disabled={!hasAnySaves}
-          className="flex-1 py-4 rounded-xl bg-secondary text-reset font-semibold text-lg tap-scale disabled:opacity-30 disabled:cursor-not-allowed transition-opacity"
-          aria-label="Nollställ match"
+          className="flex-1 py-3.5 rounded-xl bg-secondary text-reset font-semibold text-base tap-scale disabled:opacity-30 disabled:cursor-not-allowed transition-opacity"
         >
           ⟳ Nollställ
         </button>
