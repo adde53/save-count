@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Undo2 } from 'lucide-react';
+import { ArrowLeft, Undo2, RotateCcw } from 'lucide-react';
 import { SportType, getSportConfig, SPORTS } from '@/lib/sportConfig';
 import { ShotOutcome, OUTCOME_CONFIG } from '@/lib/shotTypes';
 import { useShotEvents } from '@/hooks/useShotEvents';
@@ -16,10 +16,10 @@ export default function GoalTracker() {
   const [selectedTeam, setSelectedTeam] = useState<'home' | 'away'>('home');
   const [selectedOutcome, setSelectedOutcome] = useState<ShotOutcome>('save');
   const [currentPeriod, setCurrentPeriod] = useState(0);
-  const [homeTeamName, setHomeTeamName] = useState(searchParams.get('home') || 'Hemmalag');
-  const [awayTeamName, setAwayTeamName] = useState(searchParams.get('away') || 'Bortalag');
+  const homeTeamName = searchParams.get('home') || 'Hemmalag';
+  const awayTeamName = searchParams.get('away') || 'Bortalag';
 
-  const { shotEvents, addShot, undoLastShot, getShotCounts } = useShotEvents();
+  const { shotEvents, addShot, undoLastShot, clearShots, getShotCounts } = useShotEvents();
   const config = getSportConfig(sport);
 
   const handleTapGoal = useCallback((x: number, y: number) => {
@@ -30,60 +30,63 @@ export default function GoalTracker() {
   const awayCounts = getShotCounts('away');
 
   const teamShots = shotEvents.filter(s => s.team === selectedTeam);
+  const currentCounts = selectedTeam === 'home' ? homeCounts : awayCounts;
 
   return (
-    <div className="flex flex-col min-h-screen min-h-[100dvh] p-4 gap-3">
+    <div className="flex flex-col min-h-screen min-h-[100dvh] p-3 sm:p-4 gap-2.5">
       {/* Header */}
-      <header className="flex items-center gap-3 py-1">
-        <button onClick={() => navigate('/')} className="p-2 -ml-2 tap-scale rounded-lg hover:bg-secondary">
+      <header className="flex items-center gap-2 py-1">
+        <button onClick={() => navigate('/')} className="p-2.5 -ml-2 tap-scale rounded-xl hover:bg-secondary active:bg-secondary/80 transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <h1 className="text-lg font-semibold text-muted-foreground tracking-wide uppercase flex-1">
+        <h1 className="text-base font-semibold text-muted-foreground tracking-wide uppercase flex-1">
           Skottkarta
         </h1>
+        <button
+          onClick={undoLastShot}
+          disabled={shotEvents.length === 0}
+          className="p-2.5 tap-scale rounded-xl hover:bg-secondary disabled:opacity-30 transition-all"
+          aria-label="Ångra"
+        >
+          <Undo2 className="w-5 h-5 text-amber-400" />
+        </button>
+        <button
+          onClick={clearShots}
+          disabled={shotEvents.length === 0}
+          className="p-2.5 tap-scale rounded-xl hover:bg-secondary disabled:opacity-30 transition-all"
+          aria-label="Rensa alla"
+        >
+          <RotateCcw className="w-4 h-4 text-muted-foreground" />
+        </button>
       </header>
 
-      {/* Sport selector */}
-      <div className="flex gap-2">
-        {SPORTS.map(s => (
-          <button
-            key={s.id}
-            onClick={() => setSport(s.id)}
-            className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all tap-scale ${
-              sport === s.id ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'
-            }`}
-          >
-            {s.name}
-          </button>
-        ))}
+      {/* Team selector - large, obvious toggle */}
+      <div className="grid grid-cols-2 gap-2">
+        {(['home', 'away'] as const).map(t => {
+          const name = t === 'home' ? homeTeamName : awayTeamName;
+          const counts = t === 'home' ? homeCounts : awayCounts;
+          const isSelected = selectedTeam === t;
+          return (
+            <button
+              key={t}
+              onClick={() => setSelectedTeam(t)}
+              className={`py-3 px-3 rounded-2xl font-bold text-sm transition-all tap-scale border-2 ${
+                isSelected
+                  ? t === 'home'
+                    ? 'border-home bg-home/20 text-home shadow-lg shadow-home/20'
+                    : 'border-away bg-away/20 text-away shadow-lg shadow-away/20'
+                  : 'border-transparent bg-secondary text-muted-foreground'
+              }`}
+            >
+              <div className="truncate">{name}</div>
+              <div className="text-xs font-normal opacity-70 mt-0.5">{counts.total} skott</div>
+            </button>
+          );
+        })}
       </div>
 
-      {/* Team selector */}
-      <div className="flex gap-2">
-        <button
-          onClick={() => setSelectedTeam('home')}
-          className={`flex-1 py-2.5 rounded-xl font-semibold text-sm transition-all tap-scale border-2 ${
-            selectedTeam === 'home'
-              ? 'border-home bg-home/20 text-home'
-              : 'border-transparent bg-secondary text-muted-foreground'
-          }`}
-        >
-          {homeTeamName} ({homeCounts.total})
-        </button>
-        <button
-          onClick={() => setSelectedTeam('away')}
-          className={`flex-1 py-2.5 rounded-xl font-semibold text-sm transition-all tap-scale border-2 ${
-            selectedTeam === 'away'
-              ? 'border-away bg-away/20 text-away'
-              : 'border-transparent bg-secondary text-muted-foreground'
-          }`}
-        >
-          {awayTeamName} ({awayCounts.total})
-        </button>
-      </div>
-
-      {/* Period tabs */}
-      <div className="flex gap-1.5">
+      {/* Period tabs - compact */}
+      <div className="flex gap-1">
         {Array.from({ length: config.periodCount }, (_, i) => (
           <button
             key={i}
@@ -97,47 +100,39 @@ export default function GoalTracker() {
         ))}
       </div>
 
+      {/* Instruction banner */}
+      <div className="text-center text-xs text-muted-foreground/70 py-0.5">
+        Välj typ nedan, tryck sedan på målet
+      </div>
+
       {/* Shot outcome selector */}
       <ShotOutcomeSelector selected={selectedOutcome} onChange={setSelectedOutcome} />
 
-      {/* Goal visualization */}
+      {/* Goal visualization - takes remaining space */}
       <div className="flex-1 flex flex-col items-center justify-center min-h-0">
         <GoalView
           sport={sport}
           shots={teamShots}
           onTapGoal={handleTapGoal}
-          className="max-w-lg"
+          className="max-w-lg w-full"
         />
       </div>
 
-      {/* Shot summary */}
-      <div className="grid grid-cols-4 gap-2 text-center">
+      {/* Shot summary - compact stats bar */}
+      <div className="grid grid-cols-4 gap-1.5 text-center">
         {(['save', 'goal', 'on_target', 'off_target'] as ShotOutcome[]).map(outcome => {
-          const counts = selectedTeam === 'home' ? homeCounts : awayCounts;
-          const count = outcome === 'save' ? counts.saves
-            : outcome === 'goal' ? counts.goals
-            : outcome === 'on_target' ? counts.onTarget
-            : counts.offTarget;
+          const count = outcome === 'save' ? currentCounts.saves
+            : outcome === 'goal' ? currentCounts.goals
+            : outcome === 'on_target' ? currentCounts.onTarget
+            : currentCounts.offTarget;
           const cfg = OUTCOME_CONFIG[outcome];
           return (
-            <div key={outcome} className="bg-secondary rounded-xl py-2 px-1">
-              <div className="text-lg font-bold" style={{ color: cfg.color }}>{count}</div>
-              <div className="text-[10px] text-muted-foreground">{cfg.label}</div>
+            <div key={outcome} className="bg-secondary rounded-xl py-1.5 px-1">
+              <div className="text-base font-bold" style={{ color: cfg.color }}>{count}</div>
+              <div className="text-[9px] text-muted-foreground leading-tight">{cfg.label}</div>
             </div>
           );
         })}
-      </div>
-
-      {/* Undo */}
-      <div className="flex gap-3 pb-safe">
-        <button
-          onClick={undoLastShot}
-          disabled={shotEvents.length === 0}
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-secondary text-undo font-semibold text-lg tap-scale disabled:opacity-30 transition-opacity"
-        >
-          <Undo2 className="w-5 h-5" />
-          Ångra
-        </button>
       </div>
     </div>
   );
