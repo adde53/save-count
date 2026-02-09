@@ -1,3 +1,4 @@
+// Main page - Save Counter with Skottkarta navigation
 import SaveCounter from '@/components/SaveCounter';
 
 const Index = () => {
