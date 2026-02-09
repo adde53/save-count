@@ -85,103 +85,110 @@ export default function SaveCounter() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen min-h-[100dvh] p-4 gap-3">
-      {/* Top bar: user menu */}
-      <header className="flex items-center justify-end py-0.5">
+    <div className="flex flex-col min-h-screen min-h-[100dvh] bg-background">
+      {/* ─── Top navigation bar ─── */}
+      <div className="px-4 pt-3 pb-2 flex items-center justify-between">
+        <h1 className="text-base font-bold tracking-tight text-foreground">
+          🏒 SaveTracker
+        </h1>
         <UserMenu onLoginClick={() => setShowAuthSheet(true)} />
-      </header>
-
-      {/* Page toggle - Räknare / Skottkarta */}
-      <div className="grid grid-cols-2 gap-2">
-        <button
-          className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-primary text-primary-foreground font-bold text-sm tap-scale"
-          disabled
-        >
-          <Shield className="w-4 h-4" />
-          Räknare
-        </button>
-        <button
-          onClick={goToGoalTracker}
-          className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-secondary text-muted-foreground font-bold text-sm tap-scale hover:bg-secondary/80 transition-colors border border-border"
-        >
-          <Target className="w-4 h-4" />
-          Skottkarta
-        </button>
       </div>
 
-      {/* Sport Selector */}
-      <SportSelector
-        selectedSport={match.sport}
-        onSelectSport={changeSport}
-        disabled={hasAnySaves}
-      />
-
-      {/* Period Tabs */}
-      <PeriodTabs
-        sportConfig={sportConfig}
-        currentPeriod={match.currentPeriod}
-        periods={match.periods}
-        onSelectPeriod={setCurrentPeriod}
-      />
-
-      {/* Counters */}
-      <div className="flex-1 flex flex-col gap-3 min-h-0">
-        <TeamCounter
-          team="home"
-          label={match.homeTeamName}
-          count={currentPeriodCounts.home}
-          totalCount={totals.home}
-          isAnimating={animatingTeam === 'home'}
-          onClick={() => addSave('home')}
-          onLabelChange={(name) => setTeamName('home', name)}
-          selectedGoalieId={homeGoalieId}
-          onGoalieChange={setHomeGoalieId}
-          showGoalieSelector={isLoggedIn}
-          onShot={handleShot}
-        />
-        <TeamCounter
-          team="away"
-          label={match.awayTeamName}
-          count={currentPeriodCounts.away}
-          totalCount={totals.away}
-          isAnimating={animatingTeam === 'away'}
-          onClick={() => addSave('away')}
-          onLabelChange={(name) => setTeamName('away', name)}
-          selectedGoalieId={awayGoalieId}
-          onGoalieChange={setAwayGoalieId}
-          showGoalieSelector={isLoggedIn}
-          onShot={handleShot}
-        />
+      {/* ─── Page tabs: Räknare / Skottkarta ─── */}
+      <div className="px-4 pb-3">
+        <div className="flex bg-secondary rounded-2xl p-1 gap-1">
+          <button
+            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground font-bold text-sm transition-all"
+            disabled
+          >
+            <Shield className="w-4 h-4" />
+            Räknare
+          </button>
+          <button
+            onClick={goToGoalTracker}
+            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-muted-foreground font-bold text-sm tap-scale hover:text-foreground hover:bg-card transition-all"
+          >
+            <Target className="w-4 h-4" />
+            Skottkarta
+          </button>
+        </div>
       </div>
 
-      {/* Match Actions */}
-      <MatchActions
-        onShare={handleShare}
-        onSave={handleSave}
-        onShowHistory={() => setShowSavedMatches(true)}
-        onShowTeams={() => setShowTeamsSheet(true)}
-        onShowStats={() => setShowStatsSheet(true)}
-        onGoalTracker={goToGoalTracker}
-        hasSavedMatches={savedMatches.length > 0}
-        isLoggedIn={isLoggedIn}
-      />
+      {/* ─── Main content ─── */}
+      <div className="flex-1 flex flex-col px-4 gap-3 overflow-y-auto pb-4">
+        {/* Sport + Period selectors */}
+        <div className="flex flex-col gap-2">
+          <SportSelector
+            selectedSport={match.sport}
+            onSelectSport={changeSport}
+            disabled={hasAnySaves}
+          />
+          <PeriodTabs
+            sportConfig={sportConfig}
+            currentPeriod={match.currentPeriod}
+            periods={match.periods}
+            onSelectPeriod={setCurrentPeriod}
+          />
+        </div>
 
-      {/* Controls */}
-      <div className="flex gap-3 pb-safe">
-        <button
-          onClick={undo}
-          disabled={match.history.length === 0}
-          className="flex-1 py-3.5 rounded-xl bg-secondary text-undo font-semibold text-base tap-scale disabled:opacity-30 disabled:cursor-not-allowed transition-opacity"
-        >
-          ↩ Ångra
-        </button>
-        <button
-          onClick={() => setShowResetDialog(true)}
-          disabled={!hasAnySaves}
-          className="flex-1 py-3.5 rounded-xl bg-secondary text-reset font-semibold text-base tap-scale disabled:opacity-30 disabled:cursor-not-allowed transition-opacity"
-        >
-          ⟳ Nollställ
-        </button>
+        {/* ─── Score counters ─── */}
+        <div className="flex-1 flex flex-col gap-3 min-h-0">
+          <TeamCounter
+            team="home"
+            label={match.homeTeamName}
+            count={currentPeriodCounts.home}
+            totalCount={totals.home}
+            isAnimating={animatingTeam === 'home'}
+            onClick={() => addSave('home')}
+            onLabelChange={(name) => setTeamName('home', name)}
+            selectedGoalieId={homeGoalieId}
+            onGoalieChange={setHomeGoalieId}
+            showGoalieSelector={isLoggedIn}
+            onShot={handleShot}
+          />
+          <TeamCounter
+            team="away"
+            label={match.awayTeamName}
+            count={currentPeriodCounts.away}
+            totalCount={totals.away}
+            isAnimating={animatingTeam === 'away'}
+            onClick={() => addSave('away')}
+            onLabelChange={(name) => setTeamName('away', name)}
+            selectedGoalieId={awayGoalieId}
+            onGoalieChange={setAwayGoalieId}
+            showGoalieSelector={isLoggedIn}
+            onShot={handleShot}
+          />
+        </div>
+
+        {/* ─── Actions ─── */}
+        <MatchActions
+          onShare={handleShare}
+          onSave={handleSave}
+          onShowHistory={() => setShowSavedMatches(true)}
+          onShowTeams={() => setShowTeamsSheet(true)}
+          onShowStats={() => setShowStatsSheet(true)}
+          hasSavedMatches={savedMatches.length > 0}
+          isLoggedIn={isLoggedIn}
+        />
+
+        {/* ─── Undo / Reset ─── */}
+        <div className="flex gap-3 pb-safe">
+          <button
+            onClick={undo}
+            disabled={match.history.length === 0}
+            className="flex-1 py-3 rounded-xl bg-card border border-border text-undo font-semibold text-sm tap-scale disabled:opacity-30 disabled:cursor-not-allowed transition-opacity"
+          >
+            ↩ Ångra
+          </button>
+          <button
+            onClick={() => setShowResetDialog(true)}
+            disabled={!hasAnySaves}
+            className="flex-1 py-3 rounded-xl bg-card border border-border text-reset font-semibold text-sm tap-scale disabled:opacity-30 disabled:cursor-not-allowed transition-opacity"
+          >
+            ⟳ Nollställ
+          </button>
+        </div>
       </div>
 
       {/* Dialogs */}
