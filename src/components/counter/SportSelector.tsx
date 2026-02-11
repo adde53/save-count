@@ -12,18 +12,19 @@ export default function SportSelector({
   disabled,
 }: SportSelectorProps) {
   return (
-    <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+    <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
       {SPORTS.map((sport) => (
         <button
           key={sport.id}
           onClick={() => onSelectSport(sport.id)}
           disabled={disabled}
-          className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+          className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all flex items-center gap-1.5 ${
             selectedSport === sport.id
               ? 'bg-primary text-primary-foreground'
               : 'bg-secondary text-muted-foreground hover:text-foreground'
           } ${disabled ? 'opacity-50 cursor-not-allowed' : 'tap-scale'}`}
         >
+          <span>{sport.emoji}</span>
           {sport.name}
         </button>
       ))}

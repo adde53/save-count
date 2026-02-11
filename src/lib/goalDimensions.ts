@@ -14,6 +14,9 @@ const GOAL_DIMENSIONS: Record<SportType, GoalDimension> = {
   fotboll: { width: 732, height: 244, aspectLabel: '7.32×2.44 m' },
   handboll: { width: 300, height: 200, aspectLabel: '3×2 m' },
   ishockey: { width: 183, height: 122, aspectLabel: '183×122 cm' },
+  futsal: { width: 300, height: 200, aspectLabel: '3×2 m' },
+  lacrosse: { width: 183, height: 183, aspectLabel: '183×183 cm' },
+  vattenpoloball: { width: 300, height: 90, aspectLabel: '3×0.9 m' },
 };
 
 export const getGoalDimension = (sport: SportType): GoalDimension => {

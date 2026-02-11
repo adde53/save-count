@@ -1,7 +1,13 @@
 import { useState, useRef } from 'react';
 import GoalieSelector from './GoalieSelector';
 import ShotButtons from './ShotButtons';
-import { ShotOutcome } from '@/lib/shotTypes';
+import { ShotOutcome, OUTCOME_CONFIG } from '@/lib/shotTypes';
+
+interface ShotCounts {
+  saves: number;
+  goals: number;
+  onTarget: number;
+}
 
 interface TeamCounterProps {
   team: 'home' | 'away';
@@ -15,6 +21,7 @@ interface TeamCounterProps {
   onGoalieChange?: (goalieId: string | null) => void;
   showGoalieSelector?: boolean;
   onShot?: (team: 'home' | 'away', outcome: ShotOutcome) => void;
+  shotCounts?: ShotCounts;
 }
 
 export default function TeamCounter({
@@ -29,6 +36,7 @@ export default function TeamCounter({
   onGoalieChange,
   showGoalieSelector = false,
   onShot,
+  shotCounts,
 }: TeamCounterProps) {
   const isHome = team === 'home';
   const [editing, setEditing] = useState(false);
@@ -115,6 +123,26 @@ export default function TeamCounter({
           tryck för räddning
         </span>
       </button>
+
+      {/* Shot type counts - always visible */}
+      {shotCounts && (shotCounts.goals > 0 || shotCounts.onTarget > 0) && (
+        <div className="flex gap-1.5">
+          {shotCounts.goals > 0 && (
+            <div className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-secondary/80">
+              <span className="text-xs">{OUTCOME_CONFIG.goal.emoji}</span>
+              <span className="text-sm font-bold" style={{ color: OUTCOME_CONFIG.goal.color }}>{shotCounts.goals}</span>
+              <span className="text-[10px] text-muted-foreground">mål</span>
+            </div>
+          )}
+          {shotCounts.onTarget > 0 && (
+            <div className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-secondary/80">
+              <span className="text-xs">{OUTCOME_CONFIG.on_target.emoji}</span>
+              <span className="text-sm font-bold" style={{ color: OUTCOME_CONFIG.on_target.color }}>{shotCounts.onTarget}</span>
+              <span className="text-[10px] text-muted-foreground">på mål</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {onShot && (
         <ShotButtons team={team} onShot={onShot} />
