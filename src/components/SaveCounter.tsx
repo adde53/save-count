@@ -4,6 +4,7 @@ import { useMatch } from '@/hooks/useMatch';
 import { getSportConfig } from '@/lib/sportConfig';
 import { getTotals } from '@/lib/matchTypes';
 import { ShotOutcome } from '@/lib/shotTypes';
+import { useShotEvents } from '@/hooks/useShotEvents';
 import SportSelector from './counter/SportSelector';
 import PeriodTabs from './counter/PeriodTabs';
 import TeamCounter from './counter/TeamCounter';
@@ -26,6 +27,7 @@ export default function SaveCounter() {
     homeGoalieId, awayGoalieId, setHomeGoalieId, setAwayGoalieId,
   } = useMatch();
 
+  const { addShot: addShotEvent, getShotCounts } = useShotEvents();
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [showSavedMatches, setShowSavedMatches] = useState(false);
   const [showAuthSheet, setShowAuthSheet] = useState(false);
@@ -78,6 +80,7 @@ export default function SaveCounter() {
     if (outcome === 'save') {
       addSave(team);
     }
+    addShotEvent(team, match.currentPeriod, outcome);
   };
 
   const goToGoalTracker = () => {
@@ -145,6 +148,7 @@ export default function SaveCounter() {
             onGoalieChange={setHomeGoalieId}
             showGoalieSelector={isLoggedIn}
             onShot={handleShot}
+            shotCounts={getShotCounts('home')}
           />
           <TeamCounter
             team="away"
@@ -158,6 +162,7 @@ export default function SaveCounter() {
             onGoalieChange={setAwayGoalieId}
             showGoalieSelector={isLoggedIn}
             onShot={handleShot}
+            shotCounts={getShotCounts('away')}
           />
         </div>
 

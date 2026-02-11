@@ -11,17 +11,90 @@ interface GoalViewProps {
   className?: string;
 }
 
+// Sport-specific visual configs
+const SPORT_VISUALS: Record<SportType, {
+  bgColor: string;
+  frameColor: string;
+  netPattern: string;
+  netOpacity: number;
+  postWidth: number;
+  cornerRadius: number;
+  extraElements?: 'crossbar_round' | 'ice_crease' | 'water';
+}> = {
+  innebandy: {
+    bgColor: 'hsl(30, 30%, 35%)',
+    frameColor: 'hsl(0, 0%, 95%)',
+    netPattern: 'hsl(0, 0%, 80%)',
+    netOpacity: 0.4,
+    postWidth: 2,
+    cornerRadius: 2,
+  },
+  fotboll: {
+    bgColor: 'hsl(142, 40%, 25%)',
+    frameColor: 'hsl(0, 0%, 95%)',
+    netPattern: 'hsl(0, 0%, 80%)',
+    netOpacity: 0.3,
+    postWidth: 2.5,
+    cornerRadius: 1,
+  },
+  handboll: {
+    bgColor: 'hsl(30, 25%, 40%)',
+    frameColor: 'hsl(0, 70%, 50%)',
+    netPattern: 'hsl(0, 0%, 75%)',
+    netOpacity: 0.35,
+    postWidth: 2.5,
+    cornerRadius: 1,
+  },
+  ishockey: {
+    bgColor: 'hsl(200, 30%, 85%)',
+    frameColor: 'hsl(0, 70%, 45%)',
+    netPattern: 'hsl(0, 0%, 60%)',
+    netOpacity: 0.5,
+    postWidth: 3,
+    cornerRadius: 0,
+    extraElements: 'ice_crease',
+  },
+  futsal: {
+    bgColor: 'hsl(30, 20%, 45%)',
+    frameColor: 'hsl(0, 0%, 90%)',
+    netPattern: 'hsl(0, 0%, 70%)',
+    netOpacity: 0.3,
+    postWidth: 2,
+    cornerRadius: 1,
+  },
+  lacrosse: {
+    bgColor: 'hsl(142, 35%, 30%)',
+    frameColor: 'hsl(30, 60%, 50%)',
+    netPattern: 'hsl(0, 0%, 75%)',
+    netOpacity: 0.45,
+    postWidth: 2,
+    cornerRadius: 8,
+  },
+  vattenpoloball: {
+    bgColor: 'hsl(200, 60%, 40%)',
+    frameColor: 'hsl(0, 0%, 95%)',
+    netPattern: 'hsl(0, 0%, 80%)',
+    netOpacity: 0.3,
+    postWidth: 2,
+    cornerRadius: 1,
+    extraElements: 'water',
+  },
+};
+
 export default function GoalView({ sport, shots, onTapGoal, interactive = true, className = '' }: GoalViewProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const dim = getGoalDimension(sport);
+  const visuals = SPORT_VISUALS[sport];
 
-  // We use a normalized coordinate system.
-  // The goal area is from (10, 10) to (90, 80) within a 100x100 viewBox.
-  // Outside area (for off_target) is the surrounding margin.
+  // Adjust viewBox aspect ratio based on goal proportions
+  const aspectRatio = dim.width / dim.height;
+  const viewBoxWidth = 100;
+  const viewBoxHeight = Math.round(viewBoxWidth / Math.max(aspectRatio, 0.8) * 0.9 + 15);
+
   const goalLeft = 10;
-  const goalTop = 10;
+  const goalTop = 8;
   const goalWidth = 80;
-  const goalHeight = 70;
+  const goalHeight = viewBoxHeight - 18;
 
   const handleClick = useCallback((e: React.MouseEvent<SVGSVGElement> | React.TouchEvent<SVGSVGElement>) => {
     if (!interactive || !onTapGoal || !svgRef.current) return;
@@ -39,7 +112,6 @@ export default function GoalView({ sport, shots, onTapGoal, interactive = true, 
       clientY = e.clientY;
     }
 
-    // Convert to 0-1 coordinates relative to the whole SVG
     const x = (clientX - rect.left) / rect.width;
     const y = (clientY - rect.top) / rect.height;
 
@@ -50,9 +122,8 @@ export default function GoalView({ sport, shots, onTapGoal, interactive = true, 
 
   const getMarkerPosition = (shot: ShotEvent) => {
     if (shot.positionX == null || shot.positionY == null) return null;
-    // Map 0-1 to viewBox coordinates
-    const cx = shot.positionX * 100;
-    const cy = shot.positionY * 100;
+    const cx = shot.positionX * viewBoxWidth;
+    const cy = shot.positionY * viewBoxHeight;
     return { cx, cy };
   };
 
@@ -60,41 +131,74 @@ export default function GoalView({ sport, shots, onTapGoal, interactive = true, 
     <div className={`w-full ${className}`}>
       <svg
         ref={svgRef}
-        viewBox="0 0 100 90"
+        viewBox={`0 0 ${viewBoxWidth} ${viewBoxHeight}`}
         className={`w-full h-auto ${interactive ? 'cursor-crosshair' : ''}`}
         onClick={handleClick}
-        style={{ maxHeight: '60vh' }}
+        style={{ maxHeight: '55vh' }}
       >
-        {/* Background / pitch area */}
-        <rect x="0" y="0" width="100" height="90" rx="2" fill="hsl(142, 40%, 25%)" />
+        {/* Background */}
+        <rect x="0" y="0" width={viewBoxWidth} height={viewBoxHeight} rx="3" fill={visuals.bgColor} />
+
+        {/* Ice crease for hockey */}
+        {visuals.extraElements === 'ice_crease' && (
+          <ellipse
+            cx={goalLeft + goalWidth / 2}
+            cy={goalTop + goalHeight}
+            rx={goalWidth * 0.4}
+            ry={goalHeight * 0.25}
+            fill="hsl(210, 50%, 75%)"
+            opacity="0.2"
+            stroke="hsl(0, 70%, 45%)"
+            strokeWidth="0.5"
+            strokeDasharray="2 1"
+          />
+        )}
+
+        {/* Water effect for water polo */}
+        {visuals.extraElements === 'water' && (
+          <>
+            <rect x="0" y={goalTop + goalHeight - 2} width={viewBoxWidth} height={viewBoxHeight - goalTop - goalHeight + 4} fill="hsl(200, 70%, 35%)" rx="0" />
+            {[0, 1, 2].map(i => (
+              <path
+                key={i}
+                d={`M 0 ${goalTop + goalHeight + i * 3} Q 25 ${goalTop + goalHeight + i * 3 - 1.5} 50 ${goalTop + goalHeight + i * 3} T 100 ${goalTop + goalHeight + i * 3}`}
+                fill="none"
+                stroke="hsl(200, 80%, 60%)"
+                strokeWidth="0.4"
+                opacity={0.3 - i * 0.08}
+              />
+            ))}
+          </>
+        )}
 
         {/* Goal net pattern */}
         <defs>
-          <pattern id="net" width="4" height="4" patternUnits="userSpaceOnUse">
-            <path d="M 0 0 L 4 4 M 4 0 L 0 4" stroke="hsl(0, 0%, 80%)" strokeWidth="0.15" opacity="0.4" />
+          <pattern id={`net-${sport}`} width="4" height="4" patternUnits="userSpaceOnUse">
+            <path d="M 0 0 L 4 4 M 4 0 L 0 4" stroke={visuals.netPattern} strokeWidth="0.15" opacity={visuals.netOpacity} />
           </pattern>
         </defs>
-        <rect x={goalLeft} y={goalTop} width={goalWidth} height={goalHeight} fill="url(#net)" rx="1" />
-        <rect x={goalLeft} y={goalTop} width={goalWidth} height={goalHeight} fill="hsl(0, 0%, 100%)" opacity="0.08" rx="1" />
+        <rect x={goalLeft} y={goalTop} width={goalWidth} height={goalHeight} fill={`url(#net-${sport})`} rx={visuals.cornerRadius} />
+        <rect x={goalLeft} y={goalTop} width={goalWidth} height={goalHeight} fill="hsl(0, 0%, 100%)" opacity="0.06" rx={visuals.cornerRadius} />
 
-        {/* Goal frame - posts and crossbar */}
-        <rect x={goalLeft} y={goalTop} width={goalWidth} height={goalHeight} fill="none" stroke="hsl(0, 0%, 95%)" strokeWidth="2" rx="1" />
+        {/* Goal frame */}
+        <rect
+          x={goalLeft} y={goalTop} width={goalWidth} height={goalHeight}
+          fill="none"
+          stroke={visuals.frameColor}
+          strokeWidth={visuals.postWidth}
+          rx={visuals.cornerRadius}
+        />
 
         {/* Post highlights */}
-        <line x1={goalLeft} y1={goalTop} x2={goalLeft} y2={goalTop + goalHeight} stroke="hsl(0, 0%, 100%)" strokeWidth="2.5" />
-        <line x1={goalLeft + goalWidth} y1={goalTop} x2={goalLeft + goalWidth} y2={goalTop + goalHeight} stroke="hsl(0, 0%, 100%)" strokeWidth="2.5" />
-        <line x1={goalLeft} y1={goalTop} x2={goalLeft + goalWidth} y2={goalTop} stroke="hsl(0, 0%, 100%)" strokeWidth="2.5" />
+        <line x1={goalLeft} y1={goalTop} x2={goalLeft} y2={goalTop + goalHeight} stroke={visuals.frameColor} strokeWidth={visuals.postWidth + 0.5} />
+        <line x1={goalLeft + goalWidth} y1={goalTop} x2={goalLeft + goalWidth} y2={goalTop + goalHeight} stroke={visuals.frameColor} strokeWidth={visuals.postWidth + 0.5} />
+        <line x1={goalLeft} y1={goalTop} x2={goalLeft + goalWidth} y2={goalTop} stroke={visuals.frameColor} strokeWidth={visuals.postWidth + 0.5} />
 
         {/* Ground line */}
-        <line x1="5" y1={goalTop + goalHeight} x2="95" y2={goalTop + goalHeight} stroke="hsl(0, 0%, 90%)" strokeWidth="0.5" opacity="0.5" />
-
-        {/* Zone labels (subtle) */}
-        <text x={goalLeft + goalWidth * 0.17} y={goalTop + goalHeight * 0.35} textAnchor="middle" fontSize="3" fill="hsl(0, 0%, 70%)" opacity="0.3">Vänster</text>
-        <text x={goalLeft + goalWidth * 0.5} y={goalTop + goalHeight * 0.35} textAnchor="middle" fontSize="3" fill="hsl(0, 0%, 70%)" opacity="0.3">Mitt</text>
-        <text x={goalLeft + goalWidth * 0.83} y={goalTop + goalHeight * 0.35} textAnchor="middle" fontSize="3" fill="hsl(0, 0%, 70%)" opacity="0.3">Höger</text>
+        <line x1="5" y1={goalTop + goalHeight} x2="95" y2={goalTop + goalHeight} stroke="hsl(0, 0%, 90%)" strokeWidth="0.5" opacity="0.4" />
 
         {/* Dimension label */}
-        <text x="50" y="88" textAnchor="middle" fontSize="2.5" fill="hsl(0, 0%, 70%)" opacity="0.5">
+        <text x="50" y={viewBoxHeight - 2} textAnchor="middle" fontSize="2.5" fill="hsl(0, 0%, 70%)" opacity="0.5">
           {dim.aspectLabel}
         </text>
 
@@ -123,7 +227,7 @@ export default function GoalView({ sport, shots, onTapGoal, interactive = true, 
 
         {/* Tap instruction */}
         {interactive && shots.length === 0 && (
-          <text x="50" y={goalTop + goalHeight * 0.6} textAnchor="middle" fontSize="3.5" fill="hsl(0, 0%, 80%)" opacity="0.6">
+          <text x="50" y={goalTop + goalHeight * 0.55} textAnchor="middle" fontSize="3.5" fill="hsl(0, 0%, 80%)" opacity="0.6">
             Tryck vart skottet gick
           </text>
         )}
